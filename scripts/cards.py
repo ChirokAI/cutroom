@@ -350,12 +350,83 @@ class Painter:
         self.textbox(10, a, b, cx, cy, txt, fs, anim, anim, pad=0.9,
                      bc=self.acc if self.style != "solid" else None, tc=self.ink)
 
+    # --- full-screen takeover: the frame wipes to a colour, big text, then back to the video
+    def full(self, c, a, b):
+        OW, OH, u = self.OW, self.OH, self.u
+        if self.style == "solid":
+            bg, ba, tc, line = self.acc, "00", self.ink, self.ink
+        elif self.style == "dark":
+            bg, ba, tc, line = self.box, "00", self.fg, self.acc
+        else:  # minimal: darken the video instead of hiding it
+            bg, ba, tc, line = "&H000000&", "50", self.fg, self.acc
+        rect = f"m 0 0 l {OW} 0 l {OW} {OH} l 0 {OH}"
+        self.ev(20, a, b, r"{\an7\pos(0,0)\bord0\shad0\1c%s\1a&H%s&\clip(0,0,0,%d)"
+                r"\t(0,240,0.6,\clip(0,0,%d,%d))\fad(0,180)\p1}%s{\p0}" % (bg, ba, OH, OW, OH, rect))
+        cx, cy = OW / 2, OH * 0.46
+        t0 = a + 0.12
+        anim = r"\fad(140,160)\fscx82\fscy82\blur10\t(0,320,0.5,\fscx100\fscy100\blur0)"
+        kind = c["type"]
+        if kind == "stat":
+            txt = clean(c["text"])
+            fs = self.fit(txt, int(OH * (0.20 if self.v else 0.26)), 0.84)
+            m = NUM_RE.match(txt.replace(" ", ""))
+            count = 0.9
+            if m:
+                pre, num, suf = m.group(1), m.group(2), m.group(3) or ""
+                val = float(num.replace(",", ""))
+                dec = len(num.split(".")[1]) if "." in num else 0
+                t, step = 0.0, 1 / 30
+                while t < count:
+                    k = 1 - (1 - t / count) ** 3
+                    v = f"{val * k:,.{dec}f}" if "," in num else f"{val * k:.{dec}f}"
+                    fade = r"\fad(140,0)" if t == 0 else ""
+                    self.ev(21, t0 + t, t0 + t + step, r"{\an5\pos(%d,%d)\fs%d\1c%s\bord0\shad0%s}%s"
+                            % (cx, cy, fs, tc, fade, pre + v + suf))
+                    t += step
+                self.ev(21, t0 + count, b, r"{\an5\pos(%d,%d)\fs%d\1c%s\bord0\shad0\fad(0,160)"
+                        r"\t(0,120,\fscx106\fscy106)\t(120,260,\fscx100\fscy100)}%s" % (cx, cy, fs, tc, txt))
+            else:
+                self.ev(21, t0, b, r"{\an5\pos(%d,%d)\fs%d\1c%s\bord0\shad0%s}%s" % (cx, cy, fs, tc, anim, txt))
+            label = clean(c.get("label", "")).upper()
+            if label:
+                lfs = self.fit(label, int(fs * 0.2), 0.8)
+                self.ev(21, t0 + 0.3, b, r"{\an5\pos(%d,%d)\fs%d\1c%s\bord0\shad0\fad(220,160)}%s"
+                        % (cx, cy + fs * 0.72, lfs, tc, label))
+            return
+        if kind == "step":
+            num = f"{int(c.get('num', 1)):02d}"
+            nfs = int(OH * 0.11)
+            self.ev(21, t0, b, r"{\an5\pos(%d,%d)\fs%d\1c%s\bord0\shad0%s}%s"
+                    % (cx, cy - nfs * 0.95, nfs, line, anim, num))
+            txt = clean(c["text"])
+            fs = self.fit(txt, int(OH * (0.075 if self.v else 0.09)), 0.86)
+            self.ev(21, t0 + 0.1, b, r"{\an5\pos(%d,%d)\fs%d\1c%s\bord0\shad0%s}%s"
+                    % (cx, cy + fs * 0.4, fs, tc, anim, txt))
+            return
+        # keyword (and anything else): one big line, an accent rule grows under it
+        txt = clean(c["text"]).upper()
+        fs = self.fit(txt, int(OH * (0.11 if self.v else 0.17)), 0.97)
+        self.ev(21, t0, b, r"{\an5\pos(%d,%d)\fs%d\1c%s\bord0\shad0%s}%s" % (cx, cy, fs, tc, anim, txt))
+        lw, lh = min(text_w(txt, fs), OW * 0.86) * 0.5, max(6, int(12 * u))
+        y = cy + fs * 0.72
+        self.ev(21, t0 + 0.2, b, r"{\an7\pos(%d,%d)\bord0\shad0\1c%s\fad(0,160)\clip(%d,0,%d,%d)"
+                r"\t(0,360,0.5,\clip(%d,0,%d,%d))\p1}m 0 0 l %d 0 l %d %d l 0 %d{\p0}"
+                % (cx - lw / 2, y, line, cx, cx, OH, cx - lw / 2, cx + lw / 2, OH, lw, lw, lh, lh))
+        if c.get("sub"):
+            sub = clean(c["sub"]).upper()
+            sfs = self.fit(sub, int(fs * 0.28), 0.8)
+            self.ev(21, t0 + 0.3, b, r"{\an5\pos(%d,%d)\fs%d\1c%s\bord0\shad0\fad(220,160)}%s"
+                    % (cx, y + sfs * 1.4, sfs, tc, sub))
+
     def at(self, c, default):
         x, y = c.get("pos", default)
         return int(self.OW * x), int(self.OH * y)
 
     def draw(self, cards):
         for c in cards:
+            if c["type"] in ("keyword", "stat", "step") and c.get("full", self.look.get("size") == "full"):
+                self.full(c, c["o"], c["o"] + c["dur"])
+                continue
             fn = getattr(self, c["type"], None)
             if fn:
                 fn(c, c["o"], c["o"] + c["dur"])

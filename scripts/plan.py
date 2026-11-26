@@ -54,6 +54,7 @@ DEFAULT_EDIT = {
     "cards": {
         "mode": "auto",            # "auto" (rules: numbers, steps, call to action) | "manual" (only add_cards) | "off"
         "look": "solid",           # "solid" (accent box) | "dark" (dark glass box) | "minimal" (text only)
+        "size": "box",             # "box" (small card on the video) | "full" (keyword/stat/step cards take over the screen)
         "font": None,              # None = caption font
         "bg": "#111111", "fg": "#FFFFFF", "ink": "#111111",
         "min_gap": 1.0             # seconds between two auto cards of different types

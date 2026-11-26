@@ -25,6 +25,7 @@ answers:
   --lang        speaker language code, e.g. en, tr, es (empty = auto)
   --cards       auto (numbers, steps, call to action placed by rules) | manual (only cards you ask for) | off
   --card-look   solid (accent-colour box) | dark (dark glass box) | minimal (text only)
+  --card-size   box (small card on the video) | full (keyword, stat and step cards fill the screen)
   --broll       full (pictures/B-roll fill the frame) | window (float in the middle with a border)
   --broll-border  border colour for window, e.g. "#FFFFFF" or "accent"
 """
@@ -64,7 +65,7 @@ def font_name(path):
 def main():
     ap = argparse.ArgumentParser()
     for k in ("aspect", "captions", "accent", "color", "font", "font-file", "case", "words",
-              "size", "position", "transition", "zoom", "pace", "lang", "cards", "card-look", "broll", "broll-border"):
+              "size", "position", "transition", "zoom", "pace", "lang", "cards", "card-look", "card-size", "broll", "broll-border"):
         ap.add_argument("--" + k)
     ap.add_argument("--show", action="store_true")
     ap.add_argument("--reset", action="store_true")
@@ -122,6 +123,8 @@ def main():
         st["pace"] = a.pace
     if a.cards:
         st.setdefault("cards", {})["mode"] = a.cards
+    if a.card_size:
+        st.setdefault("cards", {})["size"] = a.card_size
     if a.card_look:
         st.setdefault("cards", {})["look"] = a.card_look
     if a.broll:
