@@ -169,6 +169,13 @@ class Painter:
             fs -= 2
         return fs
 
+    def inside(self, cx, cy, w, h):
+        """move a box centre so the whole box stays on screen, with a margin."""
+        m = 0.04 * min(self.OW, self.OH)
+        cx = min(max(cx, w / 2 + m), self.OW - w / 2 - m)
+        cy = min(max(cy, h / 2 + m), self.OH - h / 2 - m)
+        return int(cx), int(cy)
+
     def ev(self, layer, a, b, txt):
         self.lines.append(f"Dialogue: {layer},{t_ass(a)},{t_ass(b)},Card,,0,0,0,,{txt}")
 
@@ -189,6 +196,7 @@ class Painter:
         bc, tc = bc or bcol, tc or tcol
         fs = self.fit(text, fs, 0.9, pad * 2)
         w, h = text_w(text, fs) + fs * pad * 2, fs * 1.55
+        cx, cy = self.inside(cx, cy, w * 1.06, h * 1.06)  # 1.06: room for the pop overshoot
         shadow = "" if self.style == "minimal" else r"\shad0\4a&H90&\4c&H000000&\xshad0\yshad%d" % max(2, int(6 * self.u))
         if balpha != "FF":
             self.ev(layer, a, b, r"{\an5\pos(%d,%d)\bord0%s\1c%s\1a&H%s&\p1%s}%s{\p0}"
@@ -215,6 +223,7 @@ class Painter:
         lw = int(fs * 0.30)
         w = max(text_w(txt, fs), text_w(label, lw)) + fs * 0.9
         h = fs * 1.35 + (lw * 1.6 if label else 0)
+        cx, cy = self.inside(cx, cy, w * 1.06, h * 1.06)
         bcol, balpha, tcol = self.colors()
         if balpha != "FF":
             self.ev(10, a, b, r"{\an5\pos(%d,%d)\bord0\shad0\1c%s\1a&H%s&%s\fad(0,160)\p1}%s{\p0}"
