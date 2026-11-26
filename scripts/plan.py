@@ -162,7 +162,9 @@ def main():
                 break
     drops = list(edit["drop"])
     if cut.get("auto_drop_retakes", True):
-        drops += [n for n in retake_of if n not in drops]
+        for n, later in retake_of.items():
+            # the failed take is everything from n up to the sentence that restarts it
+            drops += [k for k in range(n, later) if k not in drops]
 
     # ---------------- what to remove (source time) ----------------
     remove = []

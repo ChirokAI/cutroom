@@ -121,6 +121,37 @@ def main():
 
         print(f"transcribing with whisper '{a.model}' (first run downloads the model)...")
         words, lang = transcribe(wav, a.model, a.lang)
+        # Whisper sometimes "hears" words in long silences ("Thank you for watching.").
+        # A word that sits inside a silence ffmpeg measured is a ghost - unless it is glued
+        # to real speech right next to it (Whisper often times the first word after a long
+        # pause too early); those are kept and moved to the edge of the speech.
+        long_sil = [(a, b) for a, b in sil if b - a >= 0.6]
+
+        def inside(w):
+            span = w["e"] - w["s"]
+            if span < 0.05:
+                m = (w["s"] + w["e"]) / 2
+                return any(a <= m <= b for a, b in long_sil)
+            over = sum(max(0.0, min(w["e"], b) - max(w["s"], a)) for a, b in long_sil)
+            return over / span > 0.8
+
+        flags = [inside(w) for w in words]
+        kept, ghosts = [], []
+        for i, w in enumerate(words):
+            if not flags[i]:
+                kept.append(w)
+                continue
+            nxt = words[i + 1] if i + 1 < len(words) and not flags[i + 1] else None
+            prv = kept[-1] if kept and i > 0 and not flags[i - 1] else None
+            if nxt and nxt["s"] - w["e"] < 0.4:
+                kept.append(dict(w, s=round(max(w["s"], nxt["s"] - 0.3), 3), e=nxt["s"]))
+            elif prv and w["s"] - prv["e"] < 0.4:
+                kept.append(dict(w, s=prv["e"], e=round(prv["e"] + 0.3, 3)))
+            else:
+                ghosts.append(w["w"])
+        words = kept
+        if ghosts:
+            print(f"dropped {len(ghosts)} words heard in silence: {' '.join(ghosts)[:80]}")
         print(f"words: {len(words)}  language: {lang}")
 
     out = {"video": video, **meta, "language": lang, "noise_db": a.noise,
