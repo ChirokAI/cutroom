@@ -41,7 +41,7 @@ Reply with codes like "1c 2a 3a 4a 5b 6a 7en 8a 9a", or just "defaults".
 5 Cuts         a) punch zoom   b) smooth zoom   c) punch + white flash   d) plain cuts, no zoom
 6 Pace         a) tight   b) natural, more breathing room   c) fast, shorts energy
 7 Language     en / tr / es / ... (or "auto")
-8 Cards        a) auto, solid colour box   b) auto, dark glass box   c) auto, text only   d) only when I ask   e) off
+8 Cards        a) auto, small boxes   b) auto, full screen   c) only when I ask, small   d) only when I ask, full screen   e) off
 9 Pictures &   a) full screen   b) floating window, white border   c) floating window, accent-colour border
   B-roll
 Tip: you can also send a screenshot of captions or cards you like instead of 2-4 and 8.
@@ -58,10 +58,10 @@ Turn the answer into **one** `setup.py` call with this table (missing answers = 
 | 5a / 5b / 5c / 5d | `--transition punch --zoom normal` / `--transition smooth --zoom normal` / `--transition flash --zoom normal` / `--transition none --zoom off` |
 | 6a / 6b / 6c | `--pace tight` / `--pace natural` / `--pace fast` |
 | 7 | `--lang <code>` (leave out for auto) |
-| 8a / 8b / 8c / 8d / 8e | `--cards auto --card-look solid` / `--cards auto --card-look dark` / `--cards auto --card-look minimal` / `--cards manual` / `--cards off` |
+| 8a / 8b / 8c / 8d / 8e | `--cards auto --card-size box` / `--cards auto --card-size full` / `--cards manual --card-size box` / `--cards manual --card-size full` / `--cards off` |
 | 9a / 9b / 9c | `--broll full` / `--broll window --broll-border "#FFFFFF"` / `--broll window --broll-border accent` |
 
-Example: `python <skill>/scripts/setup.py --aspect 9:16 --captions karaoke --accent "#FFD23F" --font "Montserrat ExtraBold" --case upper --words 3 --position low --size medium --transition smooth --zoom normal --pace tight --lang en --cards auto --card-look solid --broll full`
+Example: `python <skill>/scripts/setup.py --aspect 9:16 --captions karaoke --accent "#FFD23F" --font "Montserrat ExtraBold" --case upper --words 3 --position low --size medium --transition smooth --zoom normal --pace tight --lang en --cards auto --card-size box --broll full`
 
 After saving, say in one line what was saved, then go straight on to the edit.
 A font file: `--font-file "path/to/Font.ttf"` (copies it into the skill and uses it).
@@ -115,7 +115,7 @@ and run the same command:
 | any change "from now on" | not edit.json: `setup.py` with that flag (house style) |
 | "crop on me, not the centre" (9:16) | `"frame_focus": [0.35, 0.5]` |
 | "add a card here" | `"add_cards"`: list of cards; place each with `"sentence": N`, `"word": "free"` (first time it is said) or `"at": seconds`. Optional `"dur"`, `"pos": [x, y]` (0..1). |
-| | `{"type": "keyword", "text": "FREE", "word": "free"}` one word or short phrase that pops |
+| | `{"type": "keyword", "text": "FREE", "word": "free"}` one word or short phrase that pops. Add `"full": true` (keyword, stat, step) to make that one card take over the whole screen, `"full": false` to keep it small |
 | | `{"type": "lower", "text": "Alex Rivera", "sub": "Video creator", "at": 1.0}` name + role |
 | | `{"type": "stat", "text": "73%", "label": "less editing time", "sentence": 4}` counts up |
 | | `{"type": "step", "num": 1, "text": "Cut the silences", "sentence": 6}` |
@@ -125,6 +125,8 @@ and run the same command:
 | | `{"type": "video", "file": "broll.mp4", "word": "desert", "dur": 4}` B-roll on top, muted, the speaker's voice keeps playing |
 | "different background" (sound-only files) | `"background": ["#0E0E12", "#24203A"]` two colours of the moving gradient |
 | "more cards" / "pick the key moments" | read `transcript.md` once, add 3-6 `keyword` cards on the sentences that carry the main idea. Only when asked: it costs tokens. |
+| "full-screen motion graphics" | from now on: `setup.py --card-size full`; this video only: `"cards": {"size": "full"}` |
+| "dark / text-only cards" | `setup.py --card-look dark` or `minimal` (default solid = accent-colour) |
 | "fewer cards" / "no auto cards here" | `"cards": {"mode": "manual"}` (keeps only add_cards) or `"off"` |
 
 ## What it does with the default style
